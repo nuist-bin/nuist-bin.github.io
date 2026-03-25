@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>NovoQuad 全系统控制平台 (专业纯净版)</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Jura:wght@400;600;700&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color-main: #1e2227; --bg-color-sidebar: #15181c; --bg-color-card: #252a31;
+            --border-color: #38404a; --accent-cyan: #00d1ff; --accent-blue: #2980b9; --accent-red: #e74c3c; --accent-green: #2ECC71;
+            --text-main: #a0b1c5; --text-light: #e6edf3;
+        }
+        body { font-family: 'Roboto', sans-serif; background-color: var(--bg-color-main); color: var(--text-main); height: 100vh; margin: 0; overflow: hidden; display: flex; }
+        #app { display: flex; width: 100%; height: 100%; overflow: hidden; }
+        
+        .input { background-color: #111418; border-color: var(--border-color); color: var(--accent-cyan); font-family: monospace; font-size: 0.8rem;}
+        .input:focus { border-color: var(--accent-cyan); box-shadow: 0 0 5px rgba(0, 209, 255, 0.3); }
+        
+        .table { background-color: transparent; color: var(--text-main); width: 100%; margin-bottom: 0; font-family: monospace; font-size: 0.75rem;}
+        .table thead th { color: var(--accent-cyan); border-bottom: 1px solid var(--border-color); font-family: 'Jura', sans-serif; padding: 0.25rem 0.5rem; font-size: 0.7rem;}
+        .table td { border-bottom: 1px solid var(--border-color); vertical-align: middle; padding: 0.25rem 0.5rem;}
+        
+        .row-normal:hover { background-color: rgba(0, 209, 255, 0.05) !important; }
+        .row-normal td:first-child { border-left: 2px solid transparent; }
+        .row-danger { background-color: rgba(231, 76, 60, 0.08) !important; }
+        .row-danger:hover { background-color: rgba(231, 76, 60, 0.15) !important; }
+        .row-danger td:first-child { border-left: 2px solid var(--accent-red); }
+        .row-decoded { background-color: rgba(41, 128, 185, 0.08) !important; }
+        .row-decoded:hover { background-color: rgba(41, 128, 185, 0.15) !important; }
+        .row-decoded td:first-child { border-left: 2px solid var(--accent-blue); }
+
+        .app-sidebar { background-color: var(--bg-color-sidebar); width: 220px; display: flex; flex-direction: column; border-right: 1px solid var(--border-color); z-index: 10; flex-shrink: 0;}
+        .company-logo { padding: 10px; display: flex; align-items: center; justify-content: center; border-bottom: 1px solid var(--border-color); flex-shrink: 0;}
+        .company-logo-icon { width: 30px; height: 30px; margin-right: 8px; }
+        .company-logo-text { font-family: 'Jura', sans-serif; font-size: 1.2rem; font-style: italic; font-weight: 700; color: var(--text-light); display: flex;}
+        .text-novo { color: #5bc0de; }
+        .nav-items { flex-grow: 1; padding: 5px 0; overflow-y: auto;}
+        .nav-item { display: flex; align-items: center; padding: 10px 15px; cursor: pointer; color: var(--text-main); transition: all 0.2s; border-left: 3px solid transparent; font-size: 0.85rem;}
+        .nav-item.is-active { background-color: rgba(0, 209, 255, 0.08); color: var(--accent-cyan); border-left-color: var(--accent-cyan); }
+        .nav-item-icon { width: 20px; text-align: center; margin-right: 8px; font-size: 1rem; }
+
+        .app-main-content { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+        .app-header { background-color: var(--bg-color-sidebar); padding: 5px 15px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border-color); flex-shrink: 0;}
+        
+        .module-container { padding: 10px; flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        
+        .dashboard-card { background-color: var(--bg-color-card); border-radius: 4px; border: 1px solid var(--border-color); padding: 8px 10px; position: relative; display: flex; flex-direction: column;}
+        .dashboard-card::before { content: ""; position: absolute; top: -1px; left: -1px; width: 6px; height: 6px; border-top: 2px solid var(--accent-cyan); border-left: 2px solid var(--accent-cyan); }
+        .dashboard-card.is-jammer::before { border-color: var(--accent-red); }
+
+        .data-header { display: flex; justify-content: space-between; align-items: center; padding: 4px 6px; margin-bottom: 6px; background-color: rgba(0, 209, 255, 0.05); border-left: 3px solid var(--accent-cyan); font-family: 'Jura', sans-serif; font-weight: bold; font-size: 0.8rem; color: var(--text-light); flex-shrink: 0;}
+        .data-header.is-blue { border-left-color: var(--accent-blue); background-color: rgba(41, 128, 185, 0.05); }
+        .data-header.is-red { border-left-color: var(--accent-red); background-color: rgba(231, 76, 60, 0.05); }
+        .data-header .tag { font-size: 0.65rem; height: 1.6em; padding: 0 6px; }
+        
+        .panel-header { font-size: 0.8rem; font-weight: bold; margin-bottom: 8px; border-left: 3px solid var(--accent-cyan); padding-left: 6px; color: var(--text-light); text-transform: uppercase;}
+        .panel-header.is-red { border-left-color: var(--accent-red); color: var(--accent-red); }
+
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; box-shadow: 0 0 5px currentColor;}
+        .status-on { background-color: #2ECC71; color: #2ECC71; }
+        .status-off { background-color: #E74C3C; color: #E74C3C; }
+        .status-detecting { background-color: var(--accent-cyan); color: var(--accent-cyan); animation: blink 1s infinite; }
+        .status-jamming { background-color: var(--accent-red); color: var(--accent-red); animation: fast-blink 0.5s infinite; box-shadow: 0 0 10px var(--accent-red); }
+        
+        @keyframes blink { 0% {opacity: 1; box-shadow: 0 0 8px var(--accent-cyan);} 50% {opacity: 0.4;} 100% {opacity: 1; box-shadow: 0 0 8px var(--accent-cyan);} }
+        @keyframes fast-blink { 0% {opacity: 1; box-shadow: 0 0 15px var(--accent-red);} 50% {opacity: 0.2;} 100% {opacity: 1; box-shadow: 0 0 15px var(--accent-red);} }
+
+        .threat-level-high { color: var(--accent-red); font-weight: bold; text-shadow: 0 0 3px rgba(231, 76, 60, 0.5); }
+        
+        .pagination-container { margin-top: auto; padding-top: 8px; display: flex; justify-content: space-between; align-items: center; font-family: monospace; font-size: 0.75rem; border-top: 1px solid rgba(255,255,255,0.05); }
+        .page-btn { background-color: #111418; border: 1px solid var(--border-color); color: var(--accent-cyan); padding: 2px 10px; cursor: pointer; border-radius: 2px; transition: all 0.2s;}
+        .page-btn:hover:not([disabled]) { background-color: var(--accent-cyan); color: #000; }
+        .page-btn[disabled] { color: #555; border-color: #333; cursor: not-allowed; }
+        .page-info { color: #888; }
+        
+        .data-row { display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.03); padding: 4px 0; }
+        .data-row:last-child { border-bottom: none; }
+
+        .tactical-btn { background-color: #111418; border: 1px solid var(--border-color); color: #888; padding: 4px 8px; font-size: 0.75rem; cursor: pointer; border-radius: 2px; font-family: monospace; transition: all 0.2s; flex: 1; text-align: center;}
+        .tactical-btn.is-active { background-color: rgba(46, 204, 113, 0.15); border-color: var(--accent-green); color: var(--accent-green); text-shadow: 0 0 5px rgba(46, 204, 113, 0.5); font-weight: bold;}
+        .tactical-btn.is-active-red { background-color: rgba(231, 76, 60, 0.15); border-color: var(--accent-red); color: var(--accent-red); text-shadow: 0 0 5px rgba(231, 76, 60, 0.5); font-weight: bold;}
+        .tactical-btn:hover:not(.is-active):not(.is-active-red) { border-color: #555; color: #ccc; }
+
+        .jammer-waves { position: relative; width: 200px; height: 200px; display: flex; align-items: center; justify-content: center; }
+        .jammer-waves::before, .jammer-waves::after { content: ''; position: absolute; width: 100%; height: 100%; border-radius: 50%; border: 3px solid var(--accent-red); animation: pulse-wave 1.5s linear infinite; }
+        .jammer-waves::after { animation-delay: 0.75s; }
+        @keyframes pulse-wave { 0% { transform: scale(0.1); opacity: 1; border-width: 5px; } 100% { transform: scale(2.0); opacity: 0; border-width: 1px; } }
+        .jammer-center-icon { font-size: 3rem; color: var(--accent-red); text-shadow: 0 0 15px var(--accent-red); z-index: 2; }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <aside class="app-sidebar">
+            <div class="company-logo">
+                <svg class="company-logo-icon" viewBox="0 0 100 100" fill="none">
+                    <path d="M 50 15 L 85 50 L 50 85 L 15 50 Z" stroke="#154360" stroke-width="18" stroke-linejoin="round"/>
+                    <path d="M 50 15 L 15 50 L 50 85" stroke="#5bc0de" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <div class="company-logo-text"><span class="text-novo">Novo</span>Quad</div>
+            </div>
+            <nav class="nav-items">
+                <div v-for="tab in tabs" :key="tab.id" :class="['nav-item', { 'is-active': currentTab === tab.id }]" @click="currentTab = tab.id">
+                    <i :class="['fas', tab.icon, 'nav-item-icon']"></i>{{ tab.name }}
+                </div>
+            </nav>
+        </aside>
+
+        <main class="app-main-content">
+            <header class="app-header">
+                <div style="font-family: monospace; color: var(--accent-cyan); font-size: 0.8rem;">
+                    <i class="fas fa-terminal"></i> SYS_MODULE: <span style="color: #fff;">{{ currentTabName }}</span>
+                </div>
+                <div v-if="isJamming" style="color: var(--accent-red); font-family: 'Jura'; font-weight: bold; animation: fast-blink 1s infinite;">
+                    <i class="fas fa-exclamation-triangle"></i> RF JAMMER TX ACTIVE
+                </div>
+            </header>
+
+            <div v-if="currentTab === 'antidrone'" class="module-container">
+                <div style="display: flex; flex: 1; min-height: 0; gap: 12px; width: 100%;">
+                    
+                    <div style="flex: 0 0 200px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto;">
+                        <div class="dashboard-card" style="flex-shrink: 0;">
+                            <div class="panel-header">DATALINK & DB</div>
+                            <div style="font-family: monospace; margin: 6px 0; font-size: 0.75rem;">
+                                <div :class="['status-dot', adConnected ? 'status-on' : 'status-off']"></div>
+                                <span :style="{color: adConnected ? '#2ECC71' : '#E74C3C'}">[{{ adConnected ? 'PROXY ONLINE' : 'OFFLINE' }}]</span>
+                            </div>
+                            <button class="button is-small is-fullwidth is-outlined" :class="adConnected ? 'is-danger' : 'is-info'" @click="toggleAdConnection" style="font-size: 0.75rem;">
+                                <i class="fas" :class="adConnected ? 'fa-unlink' : 'fa-link'" style="margin-right: 5px;"></i> 
+                                {{ adConnected ? 'DISCONNECT' : 'CONNECT' }}
+                            </button>
+                        </div>
+
+                        <div class="dashboard-card" style="flex-shrink: 0;">
+                            <div class="panel-header">DEVICE POSE</div>
+                            <div style="font-family: monospace; font-size: 0.75rem; line-height: 1.4;">
+                                <div class="data-row">
+                                    <span style="color: #666;"><i class="fas fa-compass" style="margin-right:4px;"></i>YAW:</span>
+                                    <strong style="color: #F1C40F;">{{ devicePose.yaw.toFixed(2) }} °</strong>
+                                </div>
+                                <div class="data-row">
+                                    <span style="color: #666;"><i class="fas fa-map-marker-alt" style="margin-right:4px;"></i>LAT:</span>
+                                    <strong style="color: var(--accent-cyan);">{{ devicePose.lat.toFixed(6) }}</strong>
+                                </div>
+                                <div class="data-row">
+                                    <span style="color: #666;"><i class="fas fa-map-marker-alt" style="margin-right:4px; opacity: 0;"></i>LNG:</span>
+                                    <strong style="color: var(--accent-cyan);">{{ devicePose.lng.toFixed(6) }}</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="dashboard-card" style="flex-shrink: 0;">
+                            <div class="panel-header">RF SCAN</div>
+                            <div style="text-align: center; margin: 10px 0;">
+                                <div :class="['status-dot', adDetecting ? 'status-detecting' : 'status-off']"></div>
+                                <div style="font-family: 'Jura'; font-size: 0.85rem; color: var(--text-light); margin-top: 4px;">
+                                    {{ adDetecting ? 'SWEEPING' : 'STANDBY' }}
+                                </div>
+                            </div>
+                            <div class="buttons is-centered mb-0" style="gap: 5px;">
+                                <button class="button is-primary is-small is-outlined" :disabled="!adConnected || adDetecting" @click="sendStartDetection" style="flex: 1; font-size: 0.75rem;">START</button>
+                                <button class="button is-danger is-small is-outlined" :disabled="!adConnected || !adDetecting" @click="sendStopDetection" style="flex: 1; font-size: 0.75rem;">STOP</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="flex: 1; display: flex; flex-direction: column; gap: 12px; min-height: 0; min-width: 0;">
+                        <div class="dashboard-card" style="flex: 1; min-height: 0; padding-bottom: 8px;">
+                            <div class="data-header">
+                                <span><i class="fas fa-wave-square" style="color: var(--accent-cyan); margin-right: 5px;"></i> SPECTRUM TARGETS DB</span>
+                                <span class="tag is-dark">Hits: {{ spectrumTargets.length }}</span>
+                            </div>
+                            <div style="flex: 1; overflow: hidden; background-color: #111418; border: 1px solid var(--border-color); border-radius: 2px;">
+                                <table class="table is-fullwidth">
+                                    <thead style="background-color: #1a1d21;">
+                                        <tr>
+                                            <th style="padding-left: 15px;">TIME</th>
+                                            <th>UAV MODEL</th>
+                                            <th>FREQ (MHz)</th>
+                                            <th>DIST (m)</th>
+                                            <th>ANGLE (°)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="(target, index) in paginatedSpectrum" :key="'spec'+index" :class="target.distance < 1000 ? 'row-danger' : 'row-normal'">
+                                            <td style="color: #666; padding-left: 15px; white-space: nowrap; font-size: 0.7rem;">{{ target.time }}</td>
+                                            <td :class="{'threat-level-high': target.distance < 1000}" style="color: var(--text-light);">{{ target.model }}</td>
+                                            <td style="color: #F1C40F;">{{ target.freq.toFixed(2) }}</td>
+                                            <td style="color: var(--accent-cyan);">{{ target.distance }}</td>
+                                            <td>{{ target.angle }}</td>
+                                        </tr>
+                                        <tr v-if="paginatedSpectrum.length === 0">
+                                            <td colspan="5" class="has-text-centered has-text-grey" style="padding: 20px; border-left: 3px solid transparent;">
+                                                [ AWAITING DATABASE RECORDS... ]
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="pagination-container">
+                                <button class="page-btn" :disabled="specPage <= 1" @click="specPage--">PREV</button>
+                                <span class="page-info">PAGE {{ specPage }} / {{ totalSpecPages || 1 }}</span>
+                                <button class="page-btn" :disabled="specPage >= totalSpecPages" @click="specPage++">NEXT</button>
+                            </div>
+                        </div>
+
+                        <div class="dashboard-card" style="flex: 1; min-height: 0; padding-bottom: 8px;">
+                            <div class="data-header is-blue">
+                                <span><i class="fas fa-microchip" style="color: var(--accent-blue); margin-right: 5px;"></i> PROTOCOL DECODED TARGETS DB</span>
+                                <span class="tag is-info is-light">Decoded: {{ decodedTargets.length }}</span>
+                            </div>
+                            <div style="flex: 1; overflow: hidden; background-color: #111418; border: 1px solid var(--border-color); border-radius: 2px;">
+                                <table class="table is-fullwidth">
+                                    <thead style="background-color: #1a1d21;">
+                                        <tr>
+                                            <th style="padding-left: 15px; color: var(--accent-blue);">TIME</th>
+                                            <th style="color: var(--accent-blue);">UAV MODEL</th>
+                                            <th style="color: var(--accent-blue);">UAV LAT / LNG</th>
+                                            <th style="color: var(--accent-blue);">APP LAT / LNG</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="(target, index) in paginatedDecoded" :key="'dec'+index" class="row-decoded">
+                                            <td style="color: #666; padding-left: 15px; white-space: nowrap; font-size: 0.7rem;">{{ target.time }}</td>
+                                            <td style="color: var(--text-light); font-weight: bold;">{{ target.model }}</td>
+                                            <td style="color: var(--accent-cyan); line-height: 1.3;">
+                                                <span style="color: #666; font-size: 0.65rem;">LAT:</span> {{ target.uavLat.toFixed(6) }}<br>
+                                                <span style="color: #666; font-size: 0.65rem;">LNG:</span> {{ target.uavLng.toFixed(6) }}
+                                            </td>
+                                            <td style="color: #2ECC71; line-height: 1.3;">
+                                                <span style="color: #666; font-size: 0.65rem;">LAT:</span> {{ target.appLat.toFixed(6) }}<br>
+                                                <span style="color: #666; font-size: 0.65rem;">LNG:</span> {{ target.appLng.toFixed(6) }}
+                                            </td>
+                                        </tr>
+                                        <tr v-if="paginatedDecoded.length === 0">
+                                            <td colspan="4" class="has-text-centered has-text-grey" style="padding: 20px; border-left: 3px solid transparent;">
+                                                [ AWAITING DATABASE RECORDS... ]
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="pagination-container" style="border-top-color: rgba(41, 128, 185, 0.2);">
+                                <button class="page-btn" :disabled="decPage <= 1" @click="decPage--" style="color: var(--accent-blue); border-color: rgba(41, 128, 185, 0.5);">PREV</button>
+                                <span class="page-info">PAGE {{ decPage }} / {{ totalDecPages || 1 }}</span>
+                                <button class="page-btn" :disabled="decPage >= totalDecPages" @click="decPage++" style="color: var(--accent-blue); border-color: rgba(41, 128, 185, 0.5);">NEXT</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div v-if="currentTab === 'jammer'" class="module-container" style="overflow-y: auto;">
+                <div style="display: flex; gap: 12px; height: 100%;">
+                    
+                    <div style="flex: 0 0 250px; display: flex; flex-direction: column; gap: 12px;">
+                        
+                        <div class="dashboard-card" style="flex-shrink: 0;">
+                            <div class="panel-header">DATALINK</div>
+                            <div style="font-family: monospace; margin: 6px 0; font-size: 0.75rem;">
+                                <div :class="['status-dot', adConnected ? 'status-on' : 'status-off']"></div>
+                                <span :style="{color: adConnected ? '#2ECC71' : '#E74C3C'}">[{{ adConnected ? 'CONNECTED' : 'OFFLINE' }}]</span>
+                            </div>
+                        </div>
+
+                        <div class="dashboard-card is-jammer" style="flex-shrink: 0; flex-grow: 1; justify-content: center;">
+                            <div class="panel-header is-red">MASTER RF TX</div>
+                            
+                            <div style="text-align: center; margin: 20px 0;">
+                                <div :class="['status-dot', isJamming ? 'status-jamming' : 'status-off']" style="width: 20px; height: 20px;"></div>
+                                <div style="font-family: 'Jura'; font-size: 1.1rem; color: var(--text-light); margin-top: 15px;">
+                                    {{ isJamming ? 'EMITTING' : 'STANDBY' }}
+                                </div>
+                            </div>
+                            <p style="font-size: 0.7rem; color: #666; text-align: center; margin-bottom: 15px; font-family: monospace;">Hardware amplifier master control.</p>
+                            <button class="button is-danger is-fullwidth is-medium" :disabled="!adConnected || isJamming" @click="sendJammerAmpCommand(true)" style="margin-bottom: 10px; font-weight: bold; border-radius: 2px;">
+                                <i class="fas fa-bolt" style="margin-right: 8px;"></i> ENGAGE
+                            </button>
+                            <button class="button is-dark is-fullwidth is-outlined" :disabled="!adConnected || !isJamming" @click="sendJammerAmpCommand(false)" style="border-radius: 2px;">
+                                CEASE FIRE
+                            </button>
+                        </div>
+                    </div>
+
+                    <div style="flex: 1; display: flex; flex-direction: column; gap: 12px; overflow-y: auto;">
+                        
+                        <div class="dashboard-card" style="flex-shrink: 0;">
+                            <div class="data-header is-red">
+                                <span><i class="fas fa-sliders-h" style="color: var(--accent-red); margin-right: 5px;"></i> JAMMING MODE CONFIGURATION</span>
+                            </div>
+                            
+                            <div class="columns is-mobile" style="margin-top: 5px;">
+                                <div class="column is-6">
+                                    <div style="font-size: 0.75rem; color: #888; margin-bottom: 8px; font-family: monospace;">TACTICAL MODES:</div>
+                                    <div style="display: flex; gap: 5px;">
+                                        <button :class="['tactical-btn', jamMode.general ? 'is-active' : '']" @click="jamMode.general = !jamMode.general">GENERAL</button>
+                                        <button :class="['tactical-btn', jamMode.gps ? 'is-active' : '']" @click="jamMode.gps = !jamMode.gps">GPS</button>
+                                        <button :class="['tactical-btn', jamMode.deception ? 'is-active' : '']" @click="jamMode.deception = !jamMode.deception">DECEPTION</button>
+                                    </div>
+                                </div>
+                                <div class="column is-6">
+                                    <div style="font-size: 0.75rem; color: #888; margin-bottom: 8px; font-family: monospace;">HARDWARE CHANNELS:</div>
+                                    <div style="display: flex; gap: 5px;">
+                                        <button :class="['tactical-btn', jamMode.ch1 ? 'is-active' : '']" @click="jamMode.ch1 = !jamMode.ch1">5.8GHz</button>
+                                        <button :class="['tactical-btn', jamMode.ch2 ? 'is-active' : '']" @click="jamMode.ch2 = !jamMode.ch2">5.2GHz</button>
+                                        <button :class="['tactical-btn', jamMode.ch3 ? 'is-active' : '']" @click="jamMode.ch3 = !jamMode.ch3">2.4GHz</button>
+                                        <button :class="['tactical-btn', jamMode.ch4 ? 'is-active' : '']" @click="jamMode.ch4 = !jamMode.ch4">&lt;2GHz</button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div style="display: flex; gap: 10px; margin-top: 5px; justify-content: flex-end;">
+                                <button class="button is-small is-dark is-outlined" :disabled="!adConnected" @click="queryJamMode" style="border-radius: 2px;">READ MODE</button>
+                                <button class="button is-small is-danger is-outlined" :disabled="!adConnected" @click="setJamMode" style="border-radius: 2px;">WRITE MODE</button>
+                            </div>
+                        </div>
+
+                        <div class="dashboard-card" style="flex: 1; display: flex; flex-direction: column; min-height: 0;">
+                            <div class="data-header is-red">
+                                <span><i class="fas fa-wave-square" style="color: var(--accent-red); margin-right: 5px;"></i> CUSTOM BANDS CONFIGURATION</span>
+                            </div>
+                            
+                            <div style="display: flex; gap: 5px; margin-top: 8px; margin-bottom: 12px;">
+                                <button :class="['tactical-btn', activeJamChannel === 0 ? 'is-active-red' : '']" @click="activeJamChannel = 0">5.8GHz</button>
+                                <button :class="['tactical-btn', activeJamChannel === 1 ? 'is-active-red' : '']" @click="activeJamChannel = 1">5.2GHz</button>
+                                <button :class="['tactical-btn', activeJamChannel === 2 ? 'is-active-red' : '']" @click="activeJamChannel = 2">2.4GHz</button>
+                                <button :class="['tactical-btn', activeJamChannel === 3 ? 'is-active-red' : '']" @click="activeJamChannel = 3">&lt;2GHz</button>
+                            </div>
+
+                            <div style="flex: 1; overflow-y: auto; border: 1px solid var(--border-color); background: #111418;">
+                                <table class="table is-fullwidth" style="margin-bottom: 0;">
+                                    <thead style="background-color: #1a1d21; position: sticky; top: 0; z-index: 1;">
+                                        <tr>
+                                            <th style="width: 60px; text-align: center;">BAND</th>
+                                            <th style="width: 100px; text-align: center;">STATUS</th>
+                                            <th>START FREQ (MHz)</th>
+                                            <th>END FREQ (MHz)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="(band, i) in jamChannels[activeJamChannel]" :key="i">
+                                            <td style="text-align: center; font-weight: bold; color: var(--accent-cyan);">B - {{ i + 1 }}</td>
+                                            <td style="text-align: center;">
+                                                <button :class="['tactical-btn', band.enabled ? 'is-active' : '']" @click="band.enabled = !band.enabled" style="padding: 2px 10px;">
+                                                    {{ band.enabled ? 'ON' : 'OFF' }}
+                                                </button>
+                                            </td>
+                                            <td><input class="input is-small" type="number" v-model.number="band.startMHz"></td>
+                                            <td><input class="input is-small" type="number" v-model.number="band.endMHz"></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px;">
+                                <button class="button is-small is-dark is-outlined" :disabled="!adConnected" @click="queryJamBands" style="border-radius: 2px;">READ BANDS</button>
+                                <button class="button is-small is-danger is-outlined" :disabled="!adConnected" @click="setJamBands" style="border-radius: 2px;">WRITE BANDS</button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <div v-if="currentTab !== 'antidrone' && currentTab !== 'jammer'" class="module-container" style="align-items: center; justify-content: center; color: #666; font-family: monospace;">
+                <p>Module [{{ currentTabName }}] is in standby.</p>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const { createApp, ref, computed, onBeforeUnmount } = Vue;
+
+        createApp({
+            setup() {
+                const tabs = [
+                    { id: 'dashboard', name: '01. DASHBOARD', icon: 'fa-chart-pie' },
+                    { id: 'antidrone', name: '06. RF DETECTOR', icon: 'fa-satellite-dish' },
+                    { id: 'jammer', name: '07. JAMMER', icon: 'fa-radiation' }
+                ];
+                const currentTab = ref('jammer');
+                const currentTabName = computed(() => tabs.find(t => t.id === currentTab.value).name);
+
+                const adConnected = ref(false);
+                const adDetecting = ref(false);
+                const devicePose = ref({ yaw: 0.0, lat: 0.0, lng: 0.0 });
+                let poseRequestTimer = null; 
+
+                // --- JAMMER 配置 ---
+                const isJamming = ref(false); 
+                
+                const jamMode = ref({
+                    general: false, gps: false, deception: false,
+                    ch1: true, ch2: true, ch3: true, ch4: true
+                });
+
+                const activeJamChannel = ref(0); 
+                const jamChannels = ref(Array.from({ length: 4 }, () =>
+                    Array.from({ length: 8 }, () => ({
+                        enabled: false, startMHz: 0, endMHz: 0
+                    }))
+                ));
+
+                // -----------------------------
+
+                const spectrumTargets = ref([]); 
+                const decodedTargets = ref([]);
+                const specItemsPerPage = 12; 
+                const decItemsPerPage = 8;   
+                
+                const specPage = ref(1);
+                const totalSpecPages = computed(() => Math.max(1, Math.ceil(spectrumTargets.value.length / specItemsPerPage)));
+                const paginatedSpectrum = computed(() => {
+                    const start = (specPage.value - 1) * specItemsPerPage;
+                    return spectrumTargets.value.slice(start, start + specItemsPerPage);
+                });
+
+                const decPage = ref(1);
+                const totalDecPages = computed(() => Math.max(1, Math.ceil(decodedTargets.value.length / decItemsPerPage)));
+                const paginatedDecoded = computed(() => {
+                    const start = (decPage.value - 1) * decItemsPerPage;
+                    return decodedTargets.value.slice(start, start + decItemsPerPage);
+                });
+
+                let adSocket = null;
+                let receiveBuffer = new Uint8Array(0);
+
+                const getFormattedDateTime = () => {
+                    const d = new Date(); 
+                    const year = d.getFullYear();
+                    const month = String(d.getMonth() + 1).padStart(2, '0');
+                    const day = String(d.getDate()).padStart(2, '0');
+                    const hours = String(d.getHours()).padStart(2, '0');
+                    const minutes = String(d.getMinutes()).padStart(2, '0');
+                    const seconds = String(d.getSeconds()).padStart(2, '0');
+                    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+                };
+
+                const buildAdFrame = (cmd, params = []) => {
+                    const len = params.length;
+                    const buffer = new Uint8Array(7 + len + 1);
+                    buffer[0] = 0xA5; buffer[1] = 0x5A; buffer[2] = 0x10; buffer[3] = 0xA6; 
+                    buffer[4] = cmd;  buffer[5] = len & 0xFF; buffer[6] = (len >> 8) & 0xFF;  
+                    let sum = buffer[2] + buffer[3] + buffer[4] + buffer[5] + buffer[6];
+                    for (let i = 0; i < len; i++) {
+                        buffer[7 + i] = params[i]; sum += params[i];
+                    }
+                    buffer[7 + len] = sum & 0xFF; 
+                    return buffer;
+                };
+
+                const writeUint32 = (arr, offset, val) => {
+                    arr[offset] = val & 0xFF;
+                    arr[offset+1] = (val >> 8) & 0xFF;
+                    arr[offset+2] = (val >> 16) & 0xFF;
+                    arr[offset+3] = (val >>> 24) & 0xFF;
+                };
+
+                const readUint32 = (arr, offset) => {
+                    return (arr[offset] | (arr[offset+1]<<8) | (arr[offset+2]<<16) | (arr[offset+3]<<24)) >>> 0;
+                };
+
+                const toggleAdConnection = () => {
+                    if (adConnected.value) {
+                        if (adSocket) adSocket.close();
+                        adConnected.value = false;
+                        adDetecting.value = false;
+                        isJamming.value = false;
+                        receiveBuffer = new Uint8Array(0);
+                        if (poseRequestTimer) { clearInterval(poseRequestTimer); poseRequestTimer = null; }
+                    } else {
+                        try {
+                            adSocket = new WebSocket(`ws://127.0.0.1:8101`);
+                            adSocket.binaryType = "arraybuffer"; 
+
+                            adSocket.onopen = () => {
+                                adConnected.value = true;
+                                receiveBuffer = new Uint8Array(0);
+                                adSocket.send(JSON.stringify({ type: 'GET_HISTORY' }));
+
+                                poseRequestTimer = setInterval(() => {
+                                    if (adSocket && adSocket.readyState === WebSocket.OPEN) {
+                                        adSocket.send(buildAdFrame(0xD9, [])); 
+                                    }
+                                }, 1000); 
+                            };
+
+                            adSocket.onmessage = (event) => { 
+                                if (typeof event.data === 'string') {
+                                    try {
+                                        const msg = JSON.parse(event.data);
+                                        if (msg.type === 'HISTORY_DATA') {
+                                            spectrumTargets.value = msg.data.spectrum || [];
+                                            decodedTargets.value = msg.data.decoded || [];
+                                            specPage.value = 1; decPage.value = 1;
+                                        }
+                                    } catch (e) {}
+                                    return;
+                                }
+
+                                const newData = new Uint8Array(event.data);
+                                const merged = new Uint8Array(receiveBuffer.length + newData.length);
+                                merged.set(receiveBuffer); merged.set(newData, receiveBuffer.length);
+                                receiveBuffer = merged;
+
+                                while (receiveBuffer.length >= 8) {
+                                    if (receiveBuffer[0] !== 0xA5 || receiveBuffer[1] !== 0x5A) {
+                                        receiveBuffer = receiveBuffer.slice(1); continue;
+                                    }
+                                    const paramLen = receiveBuffer[5] | (receiveBuffer[6] << 8);
+                                    const expectedFrameLen = 7 + paramLen + 1;
+                                    if (receiveBuffer.length < expectedFrameLen) break;
+
+                                    const completeFrame = receiveBuffer.slice(0, expectedFrameLen);
+                                    receiveBuffer = receiveBuffer.slice(expectedFrameLen);
+                                    processCompleteFrame(completeFrame);
+                                }
+                            };
+                            
+                            adSocket.onerror = (err) => { console.error(err); };
+                            adSocket.onclose = () => {
+                                adConnected.value = false; adDetecting.value = false; isJamming.value = false;
+                                if (poseRequestTimer) { clearInterval(poseRequestTimer); poseRequestTimer = null; }
+                            };
+                        } catch(e) { console.error(e); }
+                    }
+                };
+
+                // --- 🌟 JAMMER 逻辑 🌟 ---
+
+                const setJamMode = () => {
+                    const params = new Array(6).fill(0);
+                    params[0] = jamMode.value.general ? 1 : 0;
+                    params[1] = jamMode.value.gps ? 1 : 0;
+                    params[2] = jamMode.value.deception ? 1 : 0;
+                    params[3] = 0; // Precision removed
+                    
+                    let chMask = 0;
+                    if (jamMode.value.ch1) chMask |= (1 << 0);
+                    if (jamMode.value.ch2) chMask |= (1 << 1);
+                    if (jamMode.value.ch3) chMask |= (1 << 2);
+                    if (jamMode.value.ch4) chMask |= (1 << 3);
+                    params[4] = chMask;
+                    params[5] = 0x00;   
+
+                    if (adSocket && adSocket.readyState === WebSocket.OPEN) {
+                        adSocket.send(buildAdFrame(0x55, params));
+                        alert("Tactical mode settings transmitted.");
+                    }
+                };
+
+                const queryJamMode = () => {
+                    if (adSocket && adSocket.readyState === WebSocket.OPEN) {
+                        adSocket.send(buildAdFrame(0x56, []));
+                    }
+                };
+
+                const setJamBands = () => {
+                    const params = new Array(132).fill(0);
+                    
+                    for (let c = 0; c < 4; c++) {
+                        let mask = 0;
+                        for (let b = 0; b < 8; b++) {
+                            const band = jamChannels.value[c][b];
+                            const offset = c * 32 + b * 4; 
+                            
+                            params[offset] = band.startMHz & 0xFF;
+                            params[offset+1] = (band.startMHz >> 8) & 0xFF;
+                            
+                            params[offset+2] = band.endMHz & 0xFF;
+                            params[offset+3] = (band.endMHz >> 8) & 0xFF;
+                            
+                            if (band.enabled) mask |= (1 << b);
+                        }
+                        params[128 + c] = mask;
+                    }
+
+                    if (adSocket && adSocket.readyState === WebSocket.OPEN) {
+                        adSocket.send(buildAdFrame(0x36, params));
+                        alert("4-Channel frequency bands transmitted.");
+                    }
+                };
+
+                const queryJamBands = () => {
+                    if (adSocket && adSocket.readyState === WebSocket.OPEN) {
+                        adSocket.send(buildAdFrame(0x37, []));
+                    }
+                };
+
+                const sendJammerAmpCommand = (engage) => {
+                    const params = new Array(10).fill(0);
+                    params[1] = engage ? 0x1F : 0x00; 
+                    if (adSocket && adSocket.readyState === WebSocket.OPEN) {
+                        adSocket.send(buildAdFrame(0x21, params));
+                        isJamming.value = engage; 
+                    }
+                };
+
+                // ------------------------------------
+
+                const sendStartDetection = () => {
+                    if (adSocket && adSocket.readyState === WebSocket.OPEN) adSocket.send(buildAdFrame(0xEA, [0x01]));
+                    adDetecting.value = true;
+                };
+
+                const sendStopDetection = () => {
+                    if (adSocket && adSocket.readyState === WebSocket.OPEN) adSocket.send(buildAdFrame(0xEA, [0x02]));
+                    adDetecting.value = false;
+                };
+
+                const processCompleteFrame = (view) => {
+                    const cmd = view[4];
+                    const paramLen = view[5] | (view[6] << 8);
+                    const params = view.slice(7, 7 + paramLen);
+
+                    if (cmd === 0xDD) {
+                        const angle = params[2] | (params[3] << 8);
+                        const distance = params[4] | (params[5] << 8);
+                        const freqMhz = (params[6] | (params[7] << 8)) / 10.0; 
+                        let modelStr = "";
+                        for(let i = 8; i < 72; i++) {
+                            if(params[i] === 0) break;
+                            modelStr += String.fromCharCode(params[i]);
+                        }
+                        const newTarget = {
+                            time: getFormattedDateTime(), 
+                            model: modelStr || "UNKNOWN_UAV",
+                            freq: freqMhz, distance: distance, angle: angle
+                        };
+                        spectrumTargets.value.unshift(newTarget);
+                        if (adSocket && adSocket.readyState === WebSocket.OPEN) {
+                            adSocket.send(JSON.stringify({ type: 'SAVE_SPECTRUM', data: newTarget }));
+                        }
+                    }
+                    else if (cmd === 0x80) {
+                        try {
+                            const rawStr = new TextDecoder("utf-8").decode(params);
+                            const cleanJsonStr = rawStr.substring(rawStr.indexOf('{'), rawStr.lastIndexOf('}') + 1).replace(/\0/g, ""); 
+                            const jsonObj = JSON.parse(cleanJsonStr);
+                            let records = jsonObj.AeroscopeRealtimeDroneRecord || jsonObj.list || jsonObj.data || jsonObj.droneList || [];
+                            if (!Array.isArray(records)) records = [jsonObj];
+                            
+                            records.forEach(drone => {
+                                const uavLat = drone.latitude || drone.lat || 0;
+                                const uavLng = drone.longitude || drone.lng || 0;
+                                if (!uavLat && !uavLng && !drone.droneID) return; 
+                                const newDecoded = {
+                                    time: getFormattedDateTime(),
+                                    model: drone.droneType || drone.productType || drone.name || "UNKNOWN",
+                                    uavLat: uavLat, uavLng: uavLng,
+                                    appLat: drone.appGPSLatitude || drone.appLat || 0,
+                                    appLng: drone.appGPSLongitude || drone.appLng || 0
+                                };
+                                decodedTargets.value.unshift(newDecoded);
+                                if (adSocket && adSocket.readyState === WebSocket.OPEN) {
+                                    adSocket.send(JSON.stringify({ type: 'SAVE_DECODED', data: newDecoded }));
+                                }
+                            });
+                        } catch (e) {}
+                    }
+                    else if ((cmd === 0xA2 && params[0] === 0xD9) || cmd === 0x07) {
+                        try {
+                            const rawStr = new TextDecoder("utf-8").decode(cmd === 0xA2 ? params.slice(1) : params);
+                            const yawMatch = rawStr.match(/angleZ:([-+]?\d*\.?\d+)/);
+                            const lngMatch = rawStr.match(/longitude:([-+]?\d*\.?\d+)/);
+                            const latMatch = rawStr.match(/latitude:([-+]?\d*\.?\d+)/);
+                            if (yawMatch) devicePose.value.yaw = parseFloat(yawMatch[1]);
+                            if (lngMatch) devicePose.value.lng = parseFloat(lngMatch[1]);
+                            if (latMatch) devicePose.value.lat = parseFloat(latMatch[1]);
+                        } catch (e) {}
+                    }
+                    else if (cmd === 0xA2 && params[0] === 0x56) {
+                        jamMode.value.general = params[1] === 1;
+                        jamMode.value.gps = params[2] === 1;
+                        jamMode.value.deception = params[3] === 1;
+                        
+                        const chMask = params[5];
+                        jamMode.value.ch1 = (chMask & (1 << 0)) !== 0;
+                        jamMode.value.ch2 = (chMask & (1 << 1)) !== 0;
+                        jamMode.value.ch3 = (chMask & (1 << 2)) !== 0;
+                        jamMode.value.ch4 = (chMask & (1 << 3)) !== 0;
+                    }
+                    else if (cmd === 0xA2 && params[0] === 0x37) {
+                        for (let c = 0; c < 4; c++) {
+                            const mask = params[129 + c]; 
+                            for (let b = 0; b < 8; b++) {
+                                const offset = 1 + c * 32 + b * 4; 
+                                const startFreq = params[offset] | (params[offset+1] << 8);
+                                const endFreq = params[offset+2] | (params[offset+3] << 8);
+                                
+                                jamChannels.value[c][b].startMHz = startFreq;
+                                jamChannels.value[c][b].endMHz = endFreq;
+                                jamChannels.value[c][b].enabled = (mask & (1 << b)) !== 0;
+                            }
+                        }
+                    }
+                    else if (cmd === 0xA2 && params[0] === 0x21) {
+                        if (params[1] === 0xF0) {
+                            console.error("设备拒绝了干扰启动/停止指令！");
+                            alert("Hardware amplifier engaged failed. Check device status.");
+                        }
+                    }
+                };
+
+                onBeforeUnmount(() => {
+                    if (adSocket) adSocket.close();
+                });
+
+                return {
+                    tabs, currentTab, currentTabName,
+                    adConnected, adDetecting, 
+                    spectrumTargets, paginatedSpectrum, specPage, totalSpecPages,
+                    decodedTargets, paginatedDecoded, decPage, totalDecPages,
+                    devicePose, 
+                    
+                    isJamming, jamMode, activeJamChannel, jamChannels, 
+                    sendJammerAmpCommand, setJamMode, queryJamMode, setJamBands, queryJamBands,
+                    
+                    toggleAdConnection, sendStartDetection, sendStopDetection
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
